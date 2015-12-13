@@ -109,28 +109,23 @@ int main(int argc, char** argv) {
 
 //.....................begin wipe motion code...........................
             geometry_msgs::PoseStamped rt_wipe;
-            origin_des[1]+=.1; // Increase y - swipe right
-            Affine_des_gripper.translation()=origin_des;
-            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
 
-            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
-            if(rtn_val==cwru_action::cwru_baxter_cart_moveResult::SUCCESS){
-                rtn_val=arm_motion_commander.rt_arm_execute_planned_path();
-            }else{
-                ROS_WARN("Cartesian path to desired pose not achievable");
+            for ( int i=1; i<11; i++ ) // Repeated back-and-forth motion. Make i odd so the hand winds up over the centroid when done.
+            {
+                if(i % 2== 0){origin_des[1]+=.2; // Increase y for even i - swipe left
+                   }else{origin_des[1]-=.2;} // Decrease y- swipe right
+                // Note: the same format can be used to change the x and z trajectories.
+                
+                Affine_des_gripper.translation()=origin_des;
+                rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
+
+                rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
+                if(rtn_val==cwru_action::cwru_baxter_cart_moveResult::SUCCESS){
+                    rtn_val=arm_motion_commander.rt_arm_execute_planned_path();
+                }else{
+                    ROS_WARN("Cartesian path to desired pose not achievable");
+                } 
             }
-
-            // Repeat the same code, but this time swiping left, then right again:
-            origin_des[1]-=.1; // Decrease y 
-            Affine_des_gripper.translation()=origin_des;
-            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
-            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
-
-             origin_des[1]+=.1; // Increase y - swipe right
-            Affine_des_gripper.translation()=origin_des;
-            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
-
-            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
              
 //......................end wipe motion code............................
             }

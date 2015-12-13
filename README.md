@@ -1,35 +1,18 @@
 # ps8_kvc2
-This package illustrates how to combine sensor information and Cartesian motion control.  It combines elements of baxter_cartesian_moves/ps8_kvc2_baxter_cart_move_action_client (for Cartesian motion) and cwru_pcl_utils/cwru_pcl_utils_ps8_kvc2_main, which uses the cwru_pcl_utils library for pointcloud processing.
-
-By selecting points in Rviz, via the "publish selected points" tool, a coordinate frame is constructed, with origin at the centroid of the selected points, a z-axis normal to the selected patch, an x-axis along the major axis of the selected points, and a y-axis constructed as a consistent right-hand frame.  This frame is converted to a geometry_msgs::PoseStamped and sent to the baxter_cart_move_as action server as a goal pose for a Cartesian move.  This invokes a Cartesian motion that ends up aligning the gripper frame origin with the patch centroid, orients the gripper z-axis anti-parallel to the patch, and orients the gripper frame x and y axis in the plane of the patch, with the x-axis oriented along the major axis of the selected points.
+This package is based on the package example_sensor_guided_motion, from the cwru_baxter repository. The original code takes selected points in RViz, computes the centroid and positions Baxter's tool coordinate frame such that the origin is coincident with the table top and the tool frame Z axis is pointing into the table top, normal to the surface; i.e., Baxter's hand is above the table at the selected spot. This version adds code for Baxter to move his hand back and forth, as though wiping the table. Apart from name changes, only the .cpp file has been modified, as marked by comments blocking off the modified section in the code.
 
 
-## Example usage
-`roslaunch cwru_baxter_sim baxter_world.launch` (or start real robot)
+## Example usage in simulation
+`roslaunch cwru_baxter_sim baxter_world.launch`. Wait for the "Gravity compensation turned off" message.
+`roslaunch ps8_kvc2  ps8_kvc2_baxter_sensor_guided_motion.launch`
 
-* wait for the robot (or Gazebo) to finish coming up; then enable the robot with:
+In the RViz sidebar, set the PCL2 cloud to display kinect/depth/points.
+Select points by clicking the "Publish Selected Points" button (this is a plugin, so make sure you have it downloaded), then clicking and dragging to select points on the table, then hitting "Select." Baxter's arm will then move from prepose and swab the table. 
 
-* start up the action servers and transform publishers with the following commands in separate terminals
-
-`rosrun baxter_tools enable_robot.py -e` 
-
-`rosrun baxter_traj_streamer  traj_interpolator_as`
-
-`rosrun baxter_cartesian_moves baxter_cart_move_as`
-
-`roslaunch cwru_baxter_launch yale_gripper_xform.launch` (to see gripper frame in rviz)
 
 Watch out for the following; kinect transform is different for Gazebo vs real Baxter
 `roslaunch cwru_baxter_sim kinect_xform.launch`
 
-* start up rviz and the ps8_kvc2 sensor-guided motion node
-`rosrun rviz rviz` (and set display to see kinect/depth/points and gripper frame)
 
-`rosrun ps8_kvc2 ps8_kvc2_client`
-
-*OR: use the handy launch file.  After starting the robot, run the following launch file:
-
-`roslaunch ps8_kvc2  ps8_kvc2_baxter_sensor_guided_motion.launch`
-
-
-    
+ ## Future work   
+A possible extension: Have the program look at the selected points and determine the width of the sweep and number of repetitions based on the standard deviation. For a large region, Baxter could execute a few wide sweeps. For a small selected region, Baxter could scrub an area with many repetitions of small strokes. 
