@@ -1,7 +1,4 @@
-// largely borrowed from ps8_kvc2_baxter_cart_move_action_client: 
-// wsn, Nov, 2015
-// illustrates use of baxter_cart_move_as action server called "cartMoveActionServer" together
-// with cwru_pcl_utils, borrowing from cwru_pcl_utils_ps8_kvc2_main.cpp
+// Derived from example_baxter_sensor_guided_motion_client.cpp, with additional code for the wiping motion trajectories.
 
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
@@ -22,14 +19,19 @@
 int main(int argc, char** argv) {
     ros::init(argc, argv, "ps8_kvc2_cart_move_action_client"); // name this node 
     ros::NodeHandle nh; //standard ros node handle     
+    
+    // Instantiating ArmMotionCommander & PCLUtils classes:
     ArmMotionCommander arm_motion_commander(&nh);
     CwruPclUtils cwru_pcl_utils(&nh);
+
+    // Receive pointcloud from selection:
     while (!cwru_pcl_utils.got_kinect_cloud()) {
         ROS_INFO("did not receive pointcloud");
         ros::spinOnce();
         ros::Duration(1.0).sleep();
     }
     ROS_INFO("got a pointcloud");
+    
     tf::StampedTransform tf_sensor_frame_to_torso_frame; //use this to transform sensor frame to torso frame
     tf::TransformListener tf_listener; //start a transform listener
 
@@ -55,8 +57,7 @@ int main(int argc, char** argv) {
     Eigen::Affine3f A_sensor_wrt_torso;
     Eigen::Affine3d Affine_des_gripper;
     Eigen::Vector3d xvec_des,yvec_des,zvec_des,origin_des;
-    geometry_msgs::PoseStamped rt_tool_pose;
-    
+    geometry_msgs::PoseStamped rt_tool_pose;    
     A_sensor_wrt_torso = cwru_pcl_utils.transformTFToEigen(tf_sensor_frame_to_torso_frame);
     Eigen::Vector3f plane_normal, major_axis, centroid;
     Eigen::Matrix3d Rmat;
@@ -105,6 +106,33 @@ int main(int argc, char** argv) {
             if (rtn_val == cwru_action::cwru_baxter_cart_moveResult::SUCCESS)  { 
                 //send command to execute planned motion
                 rtn_val=arm_motion_commander.rt_arm_execute_planned_path();
+
+//.....................begin wipe motion code...........................
+            geometry_msgs::PoseStamped rt_wipe;
+            origin_des[1]+=.1; // Increase y - swipe right
+            Affine_des_gripper.translation()=origin_des;
+            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
+
+            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
+            if(rtn_val==cwru_action::cwru_baxter_cart_moveResult::SUCCESS){
+                rtn_val=arm_motion_commander.rt_arm_execute_planned_path();
+            }else{
+                ROS_WARN("Cartesian path to desired pose not achievable");
+            }
+
+            // Repeat the same code, but this time swiping left, then right again:
+            origin_des[1]-=.1; // Decrease y 
+            Affine_des_gripper.translation()=origin_des;
+            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
+            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
+
+             origin_des[1]+=.1; // Increase y - swipe right
+            Affine_des_gripper.translation()=origin_des;
+            rt_wipe.pose=arm_motion_commander.transformEigenAffine3dToPose(Affine_des_gripper);
+
+            rtn_val=arm_motion_commander.rt_arm_plan_path_current_to_goal_pose(rt_wipe);
+             
+//......................end wipe motion code............................
             }
             else {
                 ROS_WARN("Cartesian path to desired pose not achievable");

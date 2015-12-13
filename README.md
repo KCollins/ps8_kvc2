@@ -5,8 +5,6 @@ By selecting points in Rviz, via the "publish selected points" tool, a coordinat
 
 
 ## Example usage
-* start up and enable the robot (or simulator)
-
 `roslaunch cwru_baxter_sim baxter_world.launch` (or start real robot)
 
 * wait for the robot (or Gazebo) to finish coming up; then enable the robot with:
@@ -31,7 +29,7 @@ Watch out for the following; kinect transform is different for Gazebo vs real Ba
 
 *OR: use the handy launch file.  After starting the robot, run the following launch file:
 
-`roslaunch ps8_kvc2  baxter_sensor_guided_motion.launch`
+`roslaunch ps8_kvc2  ps8_kvc2_baxter_sensor_guided_motion.launch`
 
 
     
